@@ -1,0 +1,6 @@
+Source: /Users/oaponte/Downloads/todo_app.png
+Tool: built-in imagegen (reference image edit, transparent background).
+Production asset: public/logo.png. Native icon sizes generated with Tauri's icon CLI.
+
+Prompt:
+Optimize this EXACT supplied icon for the macOS Dock and Cmd+Tab. Asset-only faithful edit, not a redesign. Preserve the purple rounded square, glass checklist, turquoise circular arrows, white exact lowercase text 'odoo' and exact uppercase 'TO DO', all relative positions, colors, geometry, shading and branding. Only adjust the overall framing: center the entire rounded-square icon in a square 1024x1024 transparent canvas with the colored rounded square spanning about 84% of canvas width and height (about 8% transparent margin per side); eliminate the excessive existing exterior margin. Outside the rounded-square icon must be truly transparent alpha, not black. Preserve its rounded silhouette and subtle shadow, crisp edges and excellent legibility at Dock scale. Do not add any additional text, artwork or background.

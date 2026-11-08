@@ -1,0 +1,87 @@
+# Logs y archivos de diagnóstico
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencias, compilación y cachés de JavaScript/TypeScript
+node_modules/
+dist/
+dist-ssr/
+.vite/
+.cache/
+.pnpm-store/
+*.tsbuildinfo
+coverage/
+.nyc_output/
+
+# Compilación de Rust/Tauri y paquetes de macOS
+target/
+src-tauri/gen/schemas/
+*.app/
+*.dmg
+*.dSYM/
+
+# Archivos locales y variables de entorno
+*.local
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Credenciales y certificados privados de firma
+*.key
+*.p12
+*.pfx
+*.mobileprovision
+
+# Datos locales de Odoo To Do y archivos auxiliares de SQLite
+.odoo_tasks/
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.sqlite3-journal
+
+# Cachés de Python del runner de macOS
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Cachés y estado local de graphify; el grafo y sus informes se conservan
+graphify-out/cache/
+graphify-out/.graphify_root
+graphify-out/.graphify_python
+graphify-out/.graphify_*.sig
+graphify-out/.graphify_*.pending.json
+graphify-out/.graphify_chunk_*.json
+graphify-out/.needs_update
+
+# Editores y sistema operativo
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+._*
+.AppleDouble/
+.LSOverride
+Thumbs.db
+Desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+*~
+
