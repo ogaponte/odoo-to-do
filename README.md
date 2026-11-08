@@ -6,6 +6,7 @@
   <p>Multiple Odoo connections · Rich notes · Offline editing</p>
 
   <p>
+    <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-22C55E" /></a>
     <img alt="Platform: macOS" src="https://img.shields.io/badge/platform-macOS-111827?logo=apple&amp;logoColor=white" />
     <img alt="Tauri 2" src="https://img.shields.io/badge/Tauri-2-24C8DB?logo=tauri&amp;logoColor=white" />
     <img alt="Rust backend" src="https://img.shields.io/badge/backend-Rust-CE422B?logo=rust&amp;logoColor=white" />
@@ -176,3 +177,13 @@ On macOS, local data is stored at:
 ```
 
 The database contains connection settings, including API credentials, cached tasks, and queued changes. Local databases and their SQLite companion files are excluded by [`.gitignore`](.gitignore).
+
+## Author
+
+Created and maintained by **[Oscar Aponte](https://github.com/ogaponte)**.
+
+## License
+
+Odoo To Do is open-source software released under the [MIT License](LICENSE).
+
+Copyright © 2026 Oscar Aponte.

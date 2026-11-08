@@ -2,7 +2,9 @@
 name = "odoo-to-do"
 version = "0.1.0"
 description = "Odoo To Do Desktop (Apple Notes / Microsoft To-Do style for Odoo)"
-authors = ["oaponte"]
+authors = ["Oscar Aponte"]
+license = "MIT"
+repository = "https://github.com/ogaponte/odoo-to-do"
 edition = "2024"
 
 [lib]
