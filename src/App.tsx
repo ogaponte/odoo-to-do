@@ -24,6 +24,16 @@ export function App() {
   const [isInstanceModalOpen, setIsInstanceModalOpen] = useState(false);
   const [editingInstance, setEditingInstance] = useState<OdooInstance | null>(null);
 
+  // Responsive mobile support
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth < 768);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const loadData = async () => {
     try {
       const [instList, projList, stageList, st] = await Promise.all([
@@ -56,6 +66,13 @@ export function App() {
   useEffect(() => {
     loadData();
   }, [currentView, selectedInstanceId, selectedProjectId]);
+
+  // If the active project is deleted remotely, reset selection
+  useEffect(() => {
+    if (selectedProjectId && !projects.some((p) => p.id === selectedProjectId)) {
+      setSelectedProjectId(null);
+    }
+  }, [projects, selectedProjectId]);
 
   // Refresh local data too, so background downloads appear without navigating.
   useEffect(() => {
@@ -194,6 +211,36 @@ export function App() {
     }
   };
 
+  const handleUpdateInstanceColor = async (id: string, color: string) => {
+    // Optimistic UI update
+    setInstances((prev) =>
+      prev.map((inst) => (inst.id === id ? { ...inst, color } : inst))
+    );
+    try {
+      await api.updateInstanceColor(id, color);
+    } catch (e) {
+      console.error('Failed to update instance color:', e);
+      await loadData();
+    }
+  };
+
+  const handleCreateProject = async (instanceId: string, name: string) => {
+    try {
+      const newProj = await api.createProject({
+        instance_id: instanceId,
+        name: name.trim(),
+      });
+      setProjects((prev) => [...prev, newProj]);
+      setSelectedInstanceId(instanceId);
+      setSelectedProjectId(newProj.id);
+      const st = await api.getSyncStatus();
+      setSyncStatus(st);
+    } catch (e) {
+      console.error('Failed to create project:', e);
+      alert(`Failed to create project: ${e}`);
+    }
+  };
+
   // Compute Task counts for sidebar smart views
   const todayStr = new Date().toISOString().split('T')[0];
   const byProject: Record<string, number> = {};
@@ -219,52 +266,92 @@ export function App() {
   const selectedTask = tasks.find((t) => t.id === selectedTaskId) || null;
 
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-transparent text-zinc-900 dark:text-zinc-100 font-sans antialiased select-none">
-      {/* Left Sidebar */}
-      <Sidebar
-        currentView={currentView}
-        onSelectView={(v) => {
-          setCurrentView(v);
-          setSelectedInstanceId(null);
-          setSelectedProjectId(null);
-        }}
-        selectedInstanceId={selectedInstanceId}
-        onSelectInstance={(id) => {
-          setSelectedInstanceId(id);
-          setSelectedProjectId(null);
-        }}
-        selectedProjectId={selectedProjectId}
-        onSelectProject={(id) => setSelectedProjectId(id)}
-        instances={instances}
-        projects={projects}
-        taskCounts={taskCounts}
-        syncStatus={syncStatus}
-        onTriggerSync={handleTriggerSync}
-        onOpenAddInstance={() => {
-          setEditingInstance(null);
-          setIsInstanceModalOpen(true);
-        }}
-        onDeleteInstance={handleDeleteInstance}
-      />
+    <div className="flex h-screen w-screen overflow-hidden bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 font-sans antialiased select-none">
+      {/* Mobile Drawer Backdrop */}
+      {isMobile && isMobileDrawerOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+          onClick={() => setIsMobileDrawerOpen(false)}
+        />
+      )}
 
-      {/* Middle Pane: Task List */}
-      <TaskList
-        tasks={tasks}
-        instances={instances}
-        projects={projects}
-        selectedTaskId={selectedTask?.id ?? null}
-        onSelectTask={(id) => setSelectedTaskId(id)}
-        onToggleComplete={handleToggleComplete}
-        onToggleStar={handleToggleStar}
-        onCreateTask={handleCreateTask}
-        currentView={currentView}
-        selectedInstance={selectedInstance}
-        selectedProject={selectedProject}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-      />
+      {/* Left Sidebar (Desktop fixed/resizable, Mobile slide-in drawer) */}
+      <div
+        className={
+          isMobile
+            ? `fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white dark:bg-zinc-900 shadow-2xl transform transition-transform duration-250 ease-out ${
+                isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full'
+              }`
+            : 'contents'
+        }
+      >
+        <Sidebar
+          currentView={currentView}
+          onSelectView={(v) => {
+            setCurrentView(v);
+            setSelectedInstanceId(null);
+            setSelectedProjectId(null);
+            if (isMobile) setIsMobileDrawerOpen(false);
+          }}
+          selectedInstanceId={selectedInstanceId}
+          onSelectInstance={(id) => {
+            setSelectedInstanceId(id);
+            setSelectedProjectId(null);
+            if (isMobile) setIsMobileDrawerOpen(false);
+          }}
+          selectedProjectId={selectedProjectId}
+          onSelectProject={(id) => {
+            setSelectedProjectId(id);
+            if (isMobile) setIsMobileDrawerOpen(false);
+          }}
+          instances={instances}
+          projects={projects}
+          taskCounts={taskCounts}
+          syncStatus={syncStatus}
+          onTriggerSync={handleTriggerSync}
+          onOpenAddInstance={() => {
+            setEditingInstance(null);
+            setIsInstanceModalOpen(true);
+            if (isMobile) setIsMobileDrawerOpen(false);
+          }}
+          onDeleteInstance={handleDeleteInstance}
+          onUpdateInstanceColor={handleUpdateInstanceColor}
+          onEditInstance={(inst) => {
+            setEditingInstance(inst);
+            setIsInstanceModalOpen(true);
+            if (isMobile) setIsMobileDrawerOpen(false);
+          }}
+          onCreateProject={handleCreateProject}
+          isMobile={isMobile}
+          onCloseDrawer={() => setIsMobileDrawerOpen(false)}
+        />
+      </div>
 
-      {/* Right Pane: Task Detail & Notes Editor (Apple Notes style) */}
+      {/* Middle Pane: Task List (Hidden on mobile when a task is open) */}
+      {(!isMobile || !selectedTask) && (
+        <TaskList
+          tasks={tasks}
+          instances={instances}
+          projects={projects}
+          selectedTaskId={selectedTask?.id ?? null}
+          onSelectTask={(id) => setSelectedTaskId(id)}
+          onToggleComplete={handleToggleComplete}
+          onToggleStar={handleToggleStar}
+          onCreateTask={handleCreateTask}
+          onDeleteTask={handleDeleteTask}
+          currentView={currentView}
+          selectedInstance={selectedInstance}
+          selectedProject={selectedProject}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          isMobile={isMobile}
+          onOpenDrawer={() => setIsMobileDrawerOpen(true)}
+          onTriggerSync={handleTriggerSync}
+          isSyncing={syncStatus?.is_syncing}
+        />
+      )}
+
+      {/* Right Pane: Task Detail (Full screen on mobile, side pane on desktop) */}
       {selectedTask && (
         <TaskDetail
           task={selectedTask}
@@ -274,6 +361,7 @@ export function App() {
           onClose={() => setSelectedTaskId(null)}
           onUpdate={handleUpdateTask}
           onDelete={handleDeleteTask}
+          isMobile={isMobile}
         />
       )}
 

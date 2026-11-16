@@ -2,6 +2,7 @@ import { invoke } from '@tauri-apps/api/core';
 import {
   ConnectionTestResult,
   CreateInstanceInput,
+  CreateProjectInput,
   CreateTaskInput,
   OdooInstance,
   Project,
@@ -26,6 +27,10 @@ export const api = {
     return await invoke('update_instance', { input });
   },
 
+  async updateInstanceColor(id: string, color: string): Promise<void> {
+    return await invoke('update_instance_color', { id, color });
+  },
+
   async deleteInstance(id: string): Promise<void> {
     return await invoke('delete_instance', { id });
   },
@@ -37,6 +42,10 @@ export const api = {
   // Projects & Stages
   async getProjects(instanceId?: string): Promise<Project[]> {
     return await invoke('get_projects', { instanceId: instanceId || null });
+  },
+
+  async createProject(input: CreateProjectInput): Promise<Project> {
+    return await invoke('create_project', { input });
   },
 
   async getStages(instanceId?: string): Promise<Stage[]> {

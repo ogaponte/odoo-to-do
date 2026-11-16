@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  ArrowLeft,
   Calendar,
   CheckCircle2,
   Circle,
@@ -16,6 +17,7 @@ import {
 import { OdooInstance, Project, Stage, Task, UpdateTaskInput } from '../types';
 import { handleWindowDrag } from '../utils/drag';
 import { HtmlNotes } from './HtmlNotes';
+import { ConfirmModal } from './ConfirmModal';
 import { openUrl } from '@tauri-apps/plugin-opener';
 
 interface TaskDetailProps {
@@ -26,6 +28,7 @@ interface TaskDetailProps {
   onClose: () => void;
   onUpdate: (input: UpdateTaskInput) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  isMobile?: boolean;
 }
 
 export const TaskDetail: React.FC<TaskDetailProps> = ({
@@ -36,6 +39,7 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
   onClose,
   onUpdate,
   onDelete,
+  isMobile,
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -46,6 +50,7 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
   const [lastSavedTime, setLastSavedTime] = useState<string | null>(null);
   const [browserError, setBrowserError] = useState('');
   const [openingBrowser, setOpeningBrowser] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
   const previousTask = useRef<Task | null>(null);
 
   useEffect(() => {
@@ -192,36 +197,61 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
     });
   };
 
-  const handleDelete = async () => {
-    if (confirm(`Delete task "${task.title}"?`)) {
-      await onDelete(task.id);
-      onClose();
-    }
+  const handleConfirmDelete = async () => {
+    setIsConfirmingDelete(false);
+    await onDelete(task.id);
+    onClose();
   };
 
   return (
-    <div className="flex-1 min-w-0 h-screen flex flex-col bg-white/15 dark:bg-black/20 backdrop-blur-xl border-l border-black/8 dark:border-white/10 select-none animate-in slide-in-from-right duration-150">
-      {/* Top action bar (draggable in empty space) */}
+    <div
+      className={`${
+        isMobile
+          ? 'fixed inset-0 z-40 bg-zinc-50 dark:bg-zinc-950 w-full'
+          : 'flex-1 min-w-0 bg-white/15 dark:bg-black/20 backdrop-blur-xl border-l border-black/8 dark:border-white/10'
+      } h-screen flex flex-col select-none animate-in slide-in-from-right duration-150`}
+    >
+      {/* Top action bar (draggable in empty space on desktop) */}
       <div
-        data-tauri-drag-region="deep"
-        onMouseDown={handleWindowDrag}
-        className="h-13 px-4 flex items-center justify-between border-b border-black/5 dark:border-white/5 cursor-grab active:cursor-grabbing"
+        data-tauri-drag-region={isMobile ? undefined : "deep"}
+        onMouseDown={isMobile ? undefined : handleWindowDrag}
+        style={
+          isMobile
+            ? { paddingTop: 'env(safe-area-inset-top, 0px)' }
+            : undefined
+        }
+        className={`${
+          isMobile ? 'h-auto pt-3 pb-3' : 'h-13'
+        } px-4 flex items-center justify-between border-b border-black/5 dark:border-white/5 ${
+          isMobile ? '' : 'cursor-grab active:cursor-grabbing'
+        }`}
       >
-        <div className="flex items-center gap-2 pointer-events-none" data-tauri-drag-region="deep">
+        <div className="flex items-center gap-2 min-w-0">
+          {isMobile && (
+            <button
+              type="button"
+              onClick={onClose}
+              title="Volver"
+              className="p-1.5 -ml-1.5 rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
+
           {task.sync_status === 'synced' ? (
-            <span className="inline-flex items-center gap-1 text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-2xs">
+            <span className="inline-flex items-center gap-1 text-xs md:text-sm font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/15 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-2xs">
               <CloudCheck className="w-3.5 h-3.5" />
               {task.odoo_id ? `Odoo #${task.odoo_id}` : 'Synced'}
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/20 shadow-2xs">
+            <span className="inline-flex items-center gap-1 text-xs md:text-sm font-medium text-amber-600 dark:text-amber-400 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/20 shadow-2xs">
               <CloudUpload className="w-3.5 h-3.5" />
               Pending sync
             </span>
           )}
 
           {lastSavedTime && (
-            <span className="text-[13px] text-zinc-400">
+            <span className="text-xs text-zinc-400 truncate">
               {isSaving ? 'Saving...' : lastSavedTime}
             </span>
           )}
@@ -230,7 +260,7 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
         <div className="flex items-center gap-1" data-no-drag>
           <button
             type="button"
-            onClick={handleDelete}
+            onClick={() => setIsConfirmingDelete(true)}
             title="Delete task"
             className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-500/15 transition cursor-pointer"
           >
@@ -248,7 +278,14 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
       </div>
 
       {/* Main scrollable detail */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-4">
+      <div
+        style={
+          isMobile
+            ? { paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 2.5rem)' }
+            : undefined
+        }
+        className="flex-1 overflow-y-auto p-5 space-y-4"
+      >
         {/* Title input & Completion button */}
         <div className="flex items-start gap-2.5">
           <button
@@ -413,6 +450,16 @@ export const TaskDetail: React.FC<TaskDetailProps> = ({
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={isConfirmingDelete}
+        title="¿Eliminar tarea?"
+        message={`¿Estás seguro de que deseas eliminar la tarea "${task.title}"?`}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setIsConfirmingDelete(false)}
+      />
     </div>
   );
 };

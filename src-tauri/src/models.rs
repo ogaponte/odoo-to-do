@@ -51,6 +51,13 @@ pub struct Project {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateProjectInput {
+    pub instance_id: String,
+    pub name: String,
+    pub color: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Stage {
     pub id: String,
     pub instance_id: String,

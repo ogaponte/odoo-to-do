@@ -3,7 +3,7 @@ use tauri::State;
 
 use crate::db::Database;
 use crate::models::{
-    ConnectionTestResult, CreateInstanceInput, CreateTaskInput, OdooInstance, Project, Stage,
+    ConnectionTestResult, CreateInstanceInput, CreateProjectInput, CreateTaskInput, OdooInstance, Project, Stage,
     SyncStatusInfo, Task, UpdateInstanceInput, UpdateTaskInput,
 };
 use crate::odoo::OdooClient;
@@ -19,8 +19,12 @@ pub struct AppState {
 // ==========================================
 
 #[tauri::command]
-pub fn drag_window(window: tauri::WebviewWindow) -> Result<(), String> {
-    window.start_dragging().map_err(|e| e.to_string())
+pub fn drag_window(_window: tauri::WebviewWindow) -> Result<(), String> {
+    #[cfg(any(target_os = "macos", target_os = "windows", target_os = "linux"))]
+    {
+        _window.start_dragging().map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 // ==========================================
@@ -52,6 +56,15 @@ pub async fn update_instance(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     state.db.update_instance(input).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn update_instance_color(
+    id: String,
+    color: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    state.db.update_instance_color(&id, &color).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -91,6 +104,21 @@ pub async fn get_projects(
         .db
         .get_projects(instance_id.as_deref())
         .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn create_project(
+    input: CreateProjectInput,
+    state: State<'_, AppState>,
+) -> Result<Project, String> {
+    let project = state.db.create_project_locally(input).map_err(|e| e.to_string())?;
+
+    let sync = state.sync_engine.clone();
+    tokio::spawn(async move {
+        let _ = sync.sync_all().await;
+    });
+
+    Ok(project)
 }
 
 #[tauri::command]

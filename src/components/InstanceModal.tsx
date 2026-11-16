@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CheckCircle2, Globe, Key, Loader2, Server, ShieldAlert, User, X } from 'lucide-react';
 import { api } from '../api';
 import { CreateInstanceInput, OdooInstance } from '../types';
@@ -40,6 +40,18 @@ export const InstanceModal: React.FC<InstanceModalProps> = ({
     version?: string | null;
   } | null>(null);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setName(editingInstance?.name || '');
+      setUrl(editingInstance?.url || '');
+      setDb(editingInstance?.db || '');
+      setUsername(editingInstance?.username || '');
+      setApiKey(editingInstance?.api_key || '');
+      setColor(editingInstance?.color || PRESET_COLORS[0]);
+      setTestResult(null);
+    }
+  }, [isOpen, editingInstance]);
 
   if (!isOpen) return null;
 
@@ -121,27 +133,27 @@ export const InstanceModal: React.FC<InstanceModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 backdrop-blur-md p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white/90 dark:bg-zinc-900/90 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 px-6 py-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-3 md:p-4">
+      <div className="w-full max-w-lg rounded-2xl bg-white/95 dark:bg-zinc-900/95 backdrop-blur-2xl border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col animate-in fade-in zoom-in-95 duration-150">
+        <div className="flex items-center justify-between border-b border-black/5 dark:border-white/5 px-5 md:px-6 py-4 shrink-0">
           <div className="flex items-center gap-2">
             <div
               className="w-3.5 h-3.5 rounded-full"
               style={{ backgroundColor: color }}
             />
-            <h2 className="text-xl font-semibold text-zinc-900 dark:text-zinc-100">
+            <h2 className="text-lg md:text-xl font-semibold text-zinc-900 dark:text-zinc-100">
               {editingInstance ? 'Edit Odoo Instance' : 'Connect Odoo Instance'}
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+            className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 md:p-6 space-y-4 overflow-y-auto flex-1">
           {/* Display name */}
           <div>
             <label className="block text-sm font-medium text-zinc-500 dark:text-zinc-400 mb-1">

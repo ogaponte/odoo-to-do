@@ -35,6 +35,16 @@ mod tests {
     }
 }
 
+fn is_record_missing_error(msg: &str) -> bool {
+    let lower = msg.to_lowercase();
+    lower.contains("missingerror")
+        || lower.contains("does not exist")
+        || lower.contains("has been deleted")
+        || lower.contains("record not found")
+        || lower.contains("no existe")
+        || lower.contains("ha sido eliminado")
+}
+
 pub struct SyncEngine {
     db: Database,
     client: OdooClient,
@@ -125,19 +135,61 @@ impl SyncEngine {
     async fn push_mutations_for_instance(&self, instance: &OdooInstance) -> Result<(), OdooError> {
         let uid = self.client.authenticate(instance).await?;
         let mutations = self.db.get_pending_mutations().map_err(|e| OdooError::Odoo(e.to_string()))?;
-        let instance_mutations: Vec<_> = mutations
+        let mut instance_mutations: Vec<_> = mutations
             .into_iter()
             .filter(|m| m.instance_id == instance.id)
             .collect();
+
+        // Push project mutations first so newly created tasks can reference remote project IDs
+        instance_mutations.sort_by_key(|m| if m.entity_type == "project" { 0 } else { 1 });
 
         let mut errors = Vec::new();
         for m in instance_mutations {
             let payload: Value = serde_json::from_str(&m.payload_json).unwrap_or(Value::Null);
 
+            if m.entity_type == "project" {
+                match m.operation.as_str() {
+                    "create" => {
+                        let proj_opt = self.db.get_project_by_id(&m.entity_id).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                        if let Some(project) = proj_opt {
+                            if project.odoo_id.is_some() {
+                                self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                                continue;
+                            }
+
+                            let mut odoo_vals = serde_json::Map::new();
+                            odoo_vals.insert("name".to_string(), Value::String(project.name.clone()));
+
+                            match self.client.create_record(instance, "project.project", Value::Object(odoo_vals)).await {
+                                Ok(new_odoo_id) => {
+                                    let now = Utc::now().to_rfc3339();
+                                    self.db.update_project_odoo_id(&project.id, new_odoo_id, Some(&now)).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                                    self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                                }
+                                Err(e) => {
+                                    let _ = self.db.mark_mutation_failed(m.id, &e.to_string());
+                                    errors.push(e.to_string());
+                                }
+                            }
+                        } else {
+                            self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                        }
+                    }
+                    _ => {}
+                }
+                continue;
+            }
+
             match m.operation.as_str() {
                 "create" => {
                     let task_opt = self.db.get_task_by_id(&m.entity_id).map_err(|e| OdooError::Odoo(e.to_string()))?;
                     if let Some(task) = task_opt {
+                        if task.odoo_id.is_some() {
+                            // Already has an Odoo ID, don't create duplicate
+                            self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                            continue;
+                        }
+
                         let mut odoo_vals = serde_json::Map::new();
                         odoo_vals.insert("name".to_string(), Value::String(task.title.clone()));
                         odoo_vals.insert("description".to_string(), Value::String(task.description.clone()));
@@ -207,15 +259,60 @@ impl SyncEngine {
                                 }
                             }
 
+                            // Project change
+                            if let Some(p_val) = payload.get("project_id") {
+                                if p_val.is_null() {
+                                    odoo_vals.insert("project_id".to_string(), Value::Bool(false));
+                                } else if let Some(pid_str) = p_val.as_str() {
+                                    if let Ok(projects) = self.db.get_projects(Some(&instance.id)) {
+                                        if let Some(p) = projects.into_iter().find(|p| p.id == pid_str) {
+                                            if let Some(oid) = p.odoo_id {
+                                                odoo_vals.insert("project_id".to_string(), serde_json::json!(oid));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Stage change
+                            if let Some(s_val) = payload.get("stage_id") {
+                                if s_val.is_null() {
+                                    odoo_vals.insert("stage_id".to_string(), Value::Bool(false));
+                                } else if let Some(sid_str) = s_val.as_str() {
+                                    if let Ok(stages) = self.db.get_stages(Some(&instance.id)) {
+                                        if let Some(s) = stages.into_iter().find(|s| s.id == sid_str) {
+                                            if let Some(oid) = s.odoo_id {
+                                                odoo_vals.insert("stage_id".to_string(), serde_json::json!(oid));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            if odoo_vals.is_empty() {
+                                self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                                continue;
+                            }
+
                             match self.client.write_record(instance, "project.task", odoo_id, Value::Object(odoo_vals)).await {
                                 Ok(_) => {
                                     self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
                                 }
                                 Err(e) => {
-                                    let _ = self.db.mark_mutation_failed(m.id, &e.to_string());
-                                    errors.push(e.to_string());
+                                    let err_msg = e.to_string();
+                                    if is_record_missing_error(&err_msg) {
+                                        // The record was deleted in Odoo: clean up locally
+                                        let _ = self.db.mark_mutation_completed(m.id);
+                                        let _ = self.db.remove_or_unassign_missing_task(&task.id);
+                                    } else {
+                                        let _ = self.db.mark_mutation_failed(m.id, &err_msg);
+                                        errors.push(err_msg);
+                                    }
                                 }
                             }
+                        } else {
+                            // Task doesn't have an odoo_id yet: it will be created via create mutation
+                            self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
                         }
                     } else {
                         self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
@@ -228,8 +325,26 @@ impl SyncEngine {
                                 self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
                             }
                             Err(e) => {
-                                let _ = self.db.mark_mutation_failed(m.id, &e.to_string());
-                                errors.push(e.to_string());
+                                let err_msg = e.to_string();
+                                if is_record_missing_error(&err_msg) {
+                                    // Already deleted in Odoo: success
+                                    self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                                } else {
+                                    // Fallback to archiving if hard delete/unlink is rejected by Odoo access rules
+                                    let archive_result = self.client.write_record(
+                                        instance,
+                                        "project.task",
+                                        odoo_id,
+                                        serde_json::json!({ "active": false }),
+                                    ).await;
+
+                                    if archive_result.is_ok() {
+                                        self.db.mark_mutation_completed(m.id).map_err(|e| OdooError::Odoo(e.to_string()))?;
+                                    } else {
+                                        let _ = self.db.mark_mutation_failed(m.id, &err_msg);
+                                        errors.push(err_msg);
+                                    }
+                                }
                             }
                         }
                     } else {
@@ -255,12 +370,15 @@ impl SyncEngine {
             Some(200),
         ).await?;
 
-        for p in projects_raw {
+        let mut remote_project_ids = Vec::new();
+        for p in &projects_raw {
             if let (Some(oid), Some(name)) = (p.get("id").and_then(|v| v.as_i64()), p.get("name").and_then(|v| v.as_str())) {
+                remote_project_ids.push(oid);
                 let wdate = p.get("write_date").and_then(|v| v.as_str());
                 let _ = self.db.upsert_odoo_project(&instance.id, oid, name, wdate);
             }
         }
+        let _ = self.db.sync_remote_projects(&instance.id, &remote_project_ids);
 
         // 2. Fetch Stages
         let stage_fields = ["id", "name", "sequence", "fold"];
@@ -271,13 +389,16 @@ impl SyncEngine {
             &stage_fields,
             Some(100),
         ).await {
-            for s in stages_raw {
+            let mut remote_stage_ids = Vec::new();
+            for s in &stages_raw {
                 if let (Some(oid), Some(name)) = (s.get("id").and_then(|v| v.as_i64()), s.get("name").and_then(|v| v.as_str())) {
+                    remote_stage_ids.push(oid);
                     let seq = s.get("sequence").and_then(|v| v.as_i64()).unwrap_or(0) as i32;
                     let fold = s.get("fold").and_then(|v| v.as_bool()).unwrap_or(false);
                     let _ = self.db.upsert_odoo_stage(&instance.id, oid, name, seq, fold);
                 }
             }
+            let _ = self.db.sync_remote_stages(&instance.id, &remote_stage_ids);
         }
 
         // 3. Fetch Tasks

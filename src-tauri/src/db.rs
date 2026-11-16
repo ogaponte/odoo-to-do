@@ -4,9 +4,20 @@ use chrono::Utc;
 use rusqlite::{params, Connection, OptionalExtension, Result};
 use uuid::Uuid;
 
+pub fn parse_timestamp(s: &str) -> Option<chrono::DateTime<Utc>> {
+    let trimmed = s.trim();
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(trimmed) {
+        return Some(dt.with_timezone(&Utc));
+    }
+    if let Ok(naive) = chrono::NaiveDateTime::parse_from_str(trimmed, "%Y-%m-%d %H:%M:%S") {
+        return Some(chrono::DateTime::from_naive_utc_and_offset(naive, Utc));
+    }
+    None
+}
+
 use crate::models::{
-    CreateInstanceInput, CreateTaskInput, OdooInstance, Project, Stage, SyncQueueItem, Task,
-    UpdateInstanceInput, UpdateTaskInput,
+    CreateInstanceInput, CreateProjectInput, CreateTaskInput, OdooInstance, Project, Stage,
+    SyncQueueItem, Task, UpdateInstanceInput, UpdateTaskInput,
 };
 
 #[derive(Clone)]
@@ -250,6 +261,16 @@ impl Database {
         Ok(())
     }
 
+    pub fn update_instance_color(&self, id: &str, color: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        let now = Utc::now().to_rfc3339();
+        conn.execute(
+            "UPDATE instances SET color = ?1, updated_at = ?2 WHERE id = ?3",
+            params![color, now, id],
+        )?;
+        Ok(())
+    }
+
     pub fn delete_instance(&self, id: &str) -> Result<()> {
         let conn = self.conn.lock().unwrap();
         conn.execute("DELETE FROM sync_queue WHERE instance_id = ?1", params![id])?;
@@ -341,6 +362,123 @@ impl Database {
             )?;
             Ok(new_id)
         }
+    }
+
+    pub fn get_project_by_id(&self, id: &str) -> Result<Option<Project>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, instance_id, odoo_id, name, color, sync_status, created_at, updated_at, odoo_write_date FROM projects WHERE id = ?1",
+        )?;
+        let mut iter = stmt.query_map(params![id], Self::map_project_row)?;
+        if let Some(p) = iter.next() {
+            Ok(Some(p?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn create_project_locally(&self, input: CreateProjectInput) -> Result<Project> {
+        let conn = self.conn.lock().unwrap();
+        let now = Utc::now().to_rfc3339();
+        let id = Uuid::new_v4().to_string();
+        let trimmed_name = input.name.trim();
+
+        conn.execute(
+            "INSERT INTO projects (id, instance_id, odoo_id, name, color, sync_status, created_at, updated_at, odoo_write_date)
+             VALUES (?1, ?2, NULL, ?3, ?4, 'pending_create', ?5, ?5, NULL)",
+            params![id, input.instance_id, trimmed_name, input.color, now],
+        )?;
+
+        let payload = serde_json::json!({
+            "name": trimmed_name,
+            "color": input.color,
+        });
+
+        conn.execute(
+            "INSERT INTO sync_queue (instance_id, entity_type, entity_id, operation, payload_json, status, retry_count, created_at)
+             VALUES (?1, 'project', ?2, 'create', ?3, 'pending', 0, ?4)",
+            params![input.instance_id, id, payload.to_string(), now],
+        )?;
+
+        Ok(Project {
+            id,
+            instance_id: input.instance_id,
+            odoo_id: None,
+            name: trimmed_name.to_string(),
+            color: input.color,
+            sync_status: "pending_create".to_string(),
+            created_at: now.clone(),
+            updated_at: now,
+            odoo_write_date: None,
+        })
+    }
+
+    pub fn update_project_odoo_id(&self, local_id: &str, odoo_id: i64, write_date: Option<&str>) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "UPDATE projects SET odoo_id = ?1, odoo_write_date = ?2, sync_status = 'synced' WHERE id = ?3",
+            params![odoo_id, write_date, local_id],
+        )?;
+        Ok(())
+    }
+
+    pub fn sync_remote_projects(&self, instance_id: &str, remote_odoo_ids: &[i64]) -> Result<Vec<String>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, odoo_id FROM projects
+             WHERE instance_id = ?1 AND odoo_id IS NOT NULL AND sync_status = 'synced'
+             AND NOT EXISTS (SELECT 1 FROM sync_queue WHERE entity_id = projects.id AND status = 'pending')",
+        )?;
+
+        let mut deleted_ids = Vec::new();
+        let rows = stmt.query_map(params![instance_id], |r| {
+            let id: String = r.get(0)?;
+            let odoo_id: i64 = r.get(1)?;
+            Ok((id, odoo_id))
+        })?;
+
+        for row in rows {
+            let (id, odoo_id) = row?;
+            if !remote_odoo_ids.contains(&odoo_id) {
+                deleted_ids.push(id);
+            }
+        }
+
+        for id in &deleted_ids {
+            conn.execute("UPDATE tasks SET project_id = NULL WHERE project_id = ?1", params![id])?;
+            conn.execute("DELETE FROM stages WHERE project_id = ?1", params![id])?;
+            conn.execute("DELETE FROM projects WHERE id = ?1", params![id])?;
+        }
+
+        Ok(deleted_ids)
+    }
+
+    pub fn sync_remote_stages(&self, instance_id: &str, remote_odoo_ids: &[i64]) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT id, odoo_id FROM stages WHERE instance_id = ?1 AND odoo_id IS NOT NULL",
+        )?;
+
+        let mut deleted_ids = Vec::new();
+        let rows = stmt.query_map(params![instance_id], |r| {
+            let id: String = r.get(0)?;
+            let odoo_id: i64 = r.get(1)?;
+            Ok((id, odoo_id))
+        })?;
+
+        for row in rows {
+            let (id, odoo_id) = row?;
+            if !remote_odoo_ids.contains(&odoo_id) {
+                deleted_ids.push(id);
+            }
+        }
+
+        for id in deleted_ids {
+            conn.execute("UPDATE tasks SET stage_id = NULL WHERE stage_id = ?1", params![id])?;
+            conn.execute("DELETE FROM stages WHERE id = ?1", params![id])?;
+        }
+
+        Ok(())
     }
 
     pub fn upsert_odoo_stage(
@@ -604,23 +742,23 @@ impl Database {
         })??;
 
         // 2. Compute new values
-        let new_title = input.title.unwrap_or(current.title);
-        let new_description = input.description.unwrap_or(current.description);
+        let new_title = input.title.clone().unwrap_or(current.title);
+        let new_description = input.description.clone().unwrap_or(current.description);
         let new_completed = input.is_completed.unwrap_or(current.is_completed);
-        let new_priority = input.priority.unwrap_or(current.priority);
-        let new_deadline = match input.date_deadline {
+        let new_priority = input.priority.clone().unwrap_or(current.priority);
+        let new_deadline = match input.date_deadline.clone() {
             Some(opt) => opt,
             None => current.date_deadline,
         };
-        let new_project = match input.project_id {
+        let new_project = match input.project_id.clone() {
             Some(opt) => opt,
             None => current.project_id,
         };
-        let new_stage = match input.stage_id {
+        let new_stage = match input.stage_id.clone() {
             Some(opt) => opt,
             None => current.stage_id,
         };
-        let new_kanban = input.kanban_state.unwrap_or(current.kanban_state);
+        let new_kanban = input.kanban_state.clone().unwrap_or(current.kanban_state);
 
         // Keep 'pending_create' if it hasn't synced yet; otherwise 'pending_update'
         let new_sync_status = if current.sync_status == "pending_create" {
@@ -660,23 +798,49 @@ impl Database {
             ],
         )?;
 
-        // Payload for mutation queue
-        let payload = serde_json::json!({
-            "title": new_title,
-            "description": new_description,
-            "is_completed": new_completed,
-            "priority": new_priority,
-            "date_deadline": new_deadline,
-            "project_id": new_project,
-            "stage_id": new_stage,
-            "kanban_state": new_kanban
-        });
+        // Build delta payload containing ONLY the fields that were explicitly modified
+        let mut delta_payload = serde_json::Map::new();
+        if let Some(ref t) = input.title {
+            delta_payload.insert("title".to_string(), serde_json::Value::String(t.clone()));
+        }
+        if let Some(ref d) = input.description {
+            delta_payload.insert("description".to_string(), serde_json::Value::String(d.clone()));
+        }
+        if let Some(c) = input.is_completed {
+            delta_payload.insert("is_completed".to_string(), serde_json::Value::Bool(c));
+        }
+        if let Some(ref p) = input.priority {
+            delta_payload.insert("priority".to_string(), serde_json::Value::String(p.clone()));
+        }
+        if let Some(ref dl) = input.date_deadline {
+            match dl {
+                Some(dl_str) => delta_payload.insert("date_deadline".to_string(), serde_json::Value::String(dl_str.clone())),
+                None => delta_payload.insert("date_deadline".to_string(), serde_json::Value::Null),
+            };
+        }
+        if let Some(ref prj) = input.project_id {
+            match prj {
+                Some(prj_id) => delta_payload.insert("project_id".to_string(), serde_json::Value::String(prj_id.clone())),
+                None => delta_payload.insert("project_id".to_string(), serde_json::Value::Null),
+            };
+        }
+        if let Some(ref stg) = input.stage_id {
+            match stg {
+                Some(stg_id) => delta_payload.insert("stage_id".to_string(), serde_json::Value::String(stg_id.clone())),
+                None => delta_payload.insert("stage_id".to_string(), serde_json::Value::Null),
+            };
+        }
+        if let Some(ref ks) = input.kanban_state {
+            delta_payload.insert("kanban_state".to_string(), serde_json::Value::String(ks.clone()));
+        }
 
-        conn.execute(
-            "INSERT INTO sync_queue (instance_id, entity_type, entity_id, operation, payload_json, status, retry_count, created_at)
-             VALUES (?1, 'task', ?2, 'update', ?3, 'pending', 0, ?4)",
-            params![current.instance_id, input.id, payload.to_string(), now],
-        )?;
+        if !delta_payload.is_empty() {
+            conn.execute(
+                "INSERT INTO sync_queue (instance_id, entity_type, entity_id, operation, payload_json, status, retry_count, created_at)
+                 VALUES (?1, 'task', ?2, 'update', ?3, 'pending', 0, ?4)",
+                params![current.instance_id, input.id, serde_json::Value::Object(delta_payload).to_string(), now],
+            )?;
+        }
 
         Ok(Task {
             id: current.id,
@@ -871,30 +1035,47 @@ impl Database {
 
         // Check if task exists locally
         let existing = conn.query_row(
-            "SELECT id, sync_status FROM tasks WHERE instance_id = ?1 AND odoo_id = ?2",
+            "SELECT id, sync_status, local_updated_at FROM tasks WHERE instance_id = ?1 AND odoo_id = ?2",
             params![instance_id, odoo_id],
             |r| {
                 let id: String = r.get(0)?;
                 let status: String = r.get(1)?;
-                Ok((id, status))
+                let local_up: String = r.get(2)?;
+                Ok((id, status, local_up))
             },
         ).ok();
 
         let is_completed_int = if is_completed { 1 } else { 0 };
 
-        if let Some((local_id, sync_status)) = existing {
-            // If the local task has pending local edits, don't clobber them!
+        if let Some((local_id, sync_status, local_updated_at)) = existing {
+            // Check if there are pending local edits
             let has_pending: bool = conn.query_row(
                 "SELECT EXISTS(SELECT 1 FROM sync_queue WHERE entity_id = ?1 AND status = 'pending')",
                 params![local_id], |row| row.get(0),
             )?;
-            if has_pending || sync_status == "pending_create" {
+
+            // Last-Write-Wins: Check whether Odoo's write_date is strictly newer than local edit
+            let remote_is_newer = match (odoo_write_date.and_then(parse_timestamp), parse_timestamp(&local_updated_at)) {
+                (Some(remote_dt), Some(local_dt)) => remote_dt > local_dt,
+                _ => false,
+            };
+
+            if (has_pending || sync_status == "pending_create") && !remote_is_newer {
                 // Keep local changes, but record the remote write_date
                 conn.execute(
                     "UPDATE tasks SET odoo_write_date = ?1 WHERE id = ?2",
                     params![odoo_write_date, local_id],
                 )?;
             } else {
+                // Remote is strictly newer or there are no pending local changes.
+                if remote_is_newer && has_pending {
+                    // Discard superseded local mutations so they don't overwrite Odoo later
+                    conn.execute(
+                        "DELETE FROM sync_queue WHERE entity_id = ?1",
+                        params![local_id],
+                    )?;
+                }
+
                 // Safe to update with remote changes
                 conn.execute(
                     "UPDATE tasks SET
@@ -957,6 +1138,13 @@ impl Database {
             )?;
         }
 
+        Ok(())
+    }
+
+    pub fn remove_or_unassign_missing_task(&self, local_id: &str) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute("DELETE FROM sync_queue WHERE entity_id = ?1", params![local_id])?;
+        conn.execute("DELETE FROM tasks WHERE id = ?1", params![local_id])?;
         Ok(())
     }
 }
@@ -1134,6 +1322,206 @@ mod tests {
         let queue_update = db.get_pending_mutations().unwrap();
         assert_eq!(queue_update.len(), 1);
         assert_eq!(queue_update[0].operation, "update");
+        // Verify that only modified fields are in payload
+        let payload: serde_json::Value = serde_json::from_str(&queue_update[0].payload_json).unwrap();
+        assert_eq!(payload.get("is_completed"), Some(&serde_json::Value::Bool(true)));
+        assert_eq!(payload.get("kanban_state"), Some(&serde_json::Value::String("done".into())));
+        assert!(payload.get("title").is_none());
+        assert!(payload.get("description").is_none());
+    }
+
+    #[test]
+    fn test_last_write_wins_remote_newer() {
+        let db = Database::new_in_memory().unwrap();
+        let instance = db.create_instance(CreateInstanceInput {
+            name: "LWW test".into(), url: "https://example.com".into(), db: "test".into(),
+            username: "test".into(), api_key: "test".into(), color: None,
+        }).unwrap();
+
+        // 1. Initial synced task at 2026-11-08 10:00:00
+        db.upsert_odoo_task(&instance.id, 100, "Original Title", "Original Desc", false, "0", None, "normal", None, None, Some("2026-11-08 10:00:00")).unwrap();
+        let task_id: String = db.conn.lock().unwrap().query_row(
+            "SELECT id FROM tasks WHERE instance_id = ?1 AND odoo_id = 100",
+            params![instance.id],
+            |r| r.get(0),
+        ).unwrap();
+
+        // 2. Edit locally at 2026-11-08 11:00:00
+        db.conn.lock().unwrap().execute(
+            "UPDATE tasks SET local_updated_at = '2026-11-08T11:00:00Z', title = 'Local Edit' WHERE id = ?1",
+            params![task_id],
+        ).unwrap();
+        db.conn.lock().unwrap().execute(
+            "INSERT INTO sync_queue (instance_id, entity_type, entity_id, operation, payload_json, status, retry_count, created_at)
+             VALUES (?1, 'task', ?2, 'update', '{\"title\":\"Local Edit\"}', 'pending', 0, '2026-11-08T11:00:00Z')",
+            params![instance.id, task_id],
+        ).unwrap();
+
+        // Case A: Remote update arrives from Odoo with older timestamp (2026-11-08 10:30:00 < local 11:00:00)
+        // Local edit should be preserved!
+        db.upsert_odoo_task(&instance.id, 100, "Stale Remote Title", "Original Desc", false, "0", None, "normal", None, None, Some("2026-11-08 10:30:00")).unwrap();
+        let current_task = db.get_task_by_id(&task_id).unwrap().unwrap();
+        assert_eq!(current_task.title, "Local Edit");
+        assert_eq!(db.get_pending_mutations().unwrap().len(), 1);
+
+        // Case B: Remote update arrives from Odoo with newer timestamp (2026-11-08 12:00:00 > local 11:00:00)
+        // Odoo's newer change wins and obsolete pending local edit is discarded!
+        db.upsert_odoo_task(&instance.id, 100, "Newer Odoo Title", "Newer Odoo Desc", false, "0", None, "normal", None, None, Some("2026-11-08 12:00:00")).unwrap();
+        let current_task = db.get_task_by_id(&task_id).unwrap().unwrap();
+        assert_eq!(current_task.title, "Newer Odoo Title");
+        assert_eq!(current_task.description, "Newer Odoo Desc");
+        assert_eq!(current_task.sync_status, "synced");
+        assert_eq!(db.get_pending_mutations().unwrap().len(), 0);
+    }
+
+    #[test]
+    fn test_update_instance_color() {
+        let db = Database::new_in_memory().unwrap();
+        let instance = db.create_instance(CreateInstanceInput {
+            name: "Color test".into(),
+            url: "https://example.com".into(),
+            db: "test".into(),
+            username: "test".into(),
+            api_key: "test".into(),
+            color: Some("#3B82F6".into()),
+        }).unwrap();
+
+        assert_eq!(instance.color, "#3B82F6");
+
+        db.update_instance_color(&instance.id, "#EF4444").unwrap();
+
+        let updated = db.get_instance_by_id(&instance.id).unwrap().unwrap();
+        assert_eq!(updated.color, "#EF4444");
+    }
+
+    #[test]
+    fn test_create_project_locally() {
+        let db = Database::new_in_memory().unwrap();
+        let instance = db.create_instance(CreateInstanceInput {
+            name: "Project instance".into(),
+            url: "https://example.com".into(),
+            db: "test".into(),
+            username: "test".into(),
+            api_key: "test".into(),
+            color: None,
+        }).unwrap();
+
+        let proj = db.create_project_locally(CreateProjectInput {
+            instance_id: instance.id.clone(),
+            name: "New Website".into(),
+            color: Some("#10B981".into()),
+        }).unwrap();
+
+        assert_eq!(proj.name, "New Website");
+        assert_eq!(proj.sync_status, "pending_create");
+        assert_eq!(proj.odoo_id, None);
+
+        let queue = db.get_pending_mutations().unwrap();
+        assert_eq!(queue.len(), 1);
+        assert_eq!(queue[0].entity_type, "project");
+        assert_eq!(queue[0].operation, "create");
+        assert_eq!(queue[0].entity_id, proj.id);
+
+        db.update_project_odoo_id(&proj.id, 555, Some("2026-11-08 10:00:00")).unwrap();
+        let fetched = db.get_project_by_id(&proj.id).unwrap().unwrap();
+        assert_eq!(fetched.odoo_id, Some(555));
+        assert_eq!(fetched.sync_status, "synced");
+    }
+
+    #[test]
+    fn test_sync_remote_projects_removes_deleted_project() {
+        let db = Database::new_in_memory().unwrap();
+        let instance = db.create_instance(CreateInstanceInput {
+            name: "Test instance".into(),
+            url: "https://example.com".into(),
+            db: "test".into(),
+            username: "test".into(),
+            api_key: "test".into(),
+            color: None,
+        }).unwrap();
+
+        // 1. Create projects and sync them
+        let proj1_id = db.upsert_odoo_project(&instance.id, 101, "Project 1", None).unwrap();
+        let proj2_id = db.upsert_odoo_project(&instance.id, 102, "Project 2", None).unwrap();
+
+        let projects = db.get_projects(Some(&instance.id)).unwrap();
+        assert_eq!(projects.len(), 2);
+
+        // 2. Remote Odoo now only returns project 101 (project 102 was deleted in Odoo)
+        let deleted = db.sync_remote_projects(&instance.id, &[101]).unwrap();
+        assert_eq!(deleted, vec![proj2_id]);
+
+        let remaining = db.get_projects(Some(&instance.id)).unwrap();
+        assert_eq!(remaining.len(), 1);
+        assert_eq!(remaining[0].id, proj1_id);
+    }
+
+    #[test]
+    fn test_delete_task_locally_offline_and_synced() {
+        let db = Database::new_in_memory().unwrap();
+        let instance = db.create_instance(CreateInstanceInput {
+            name: "Test instance".into(),
+            url: "https://example.com".into(),
+            db: "test".into(),
+            username: "test".into(),
+            api_key: "test".into(),
+            color: None,
+        }).unwrap();
+
+        // 1. Test offline task deletion (never synced to Odoo)
+        let offline_task = db.create_task_locally(CreateTaskInput {
+            instance_id: instance.id.clone(),
+            project_id: None,
+            title: "Offline task to delete".into(),
+            description: None,
+            priority: Some("1".into()),
+            date_deadline: None,
+        }).unwrap();
+
+        // There should be 1 task and 1 pending create mutation
+        assert_eq!(db.get_tasks(None, None, false, None, None).unwrap().len(), 1);
+        assert_eq!(db.get_pending_mutations().unwrap().len(), 1);
+
+        // Delete the offline task
+        db.delete_task_locally(&offline_task.id).unwrap();
+
+        // Should be gone from tasks table and sync_queue cleaned up
+        assert_eq!(db.get_tasks(None, None, false, None, None).unwrap().len(), 0);
+        assert_eq!(db.get_pending_mutations().unwrap().len(), 0);
+
+        // 2. Test synced task deletion (has odoo_id)
+        db.upsert_odoo_task(
+            &instance.id,
+            888,
+            "Synced task to delete",
+            "",
+            false,
+            "1",
+            None,
+            "normal",
+            None,
+            None,
+            Some("2026-11-08 10:00:00"),
+        ).unwrap();
+        db.refresh_task_assignments(&instance.id, &[888]).unwrap();
+
+        let tasks = db.get_tasks(None, None, false, None, None).unwrap();
+        assert_eq!(tasks.len(), 1);
+        let synced_task_id = tasks[0].id.clone();
+
+        // Delete the synced task locally
+        db.delete_task_locally(&synced_task_id).unwrap();
+
+        // Should be immediately removed from tasks list
+        assert_eq!(db.get_tasks(None, None, false, None, None).unwrap().len(), 0);
+
+        // And a pending 'delete' mutation for Odoo should be queued
+        let queue = db.get_pending_mutations().unwrap();
+        assert_eq!(queue.len(), 1);
+        assert_eq!(queue[0].entity_type, "task");
+        assert_eq!(queue[0].operation, "delete");
+        let payload: serde_json::Value = serde_json::from_str(&queue[0].payload_json).unwrap();
+        assert_eq!(payload.get("odoo_id").and_then(|v| v.as_i64()), Some(888));
     }
 }
 

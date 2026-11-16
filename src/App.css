@@ -42,18 +42,23 @@
 @layer base {
   :root {
     --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+    --sat: env(safe-area-inset-top, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    --sar: env(safe-area-inset-right, 0px);
   }
 
   html,
   body,
   #root {
-    background-color: transparent !important;
     font-family: var(--font-sans);
     user-select: none;
     -webkit-user-select: none;
     overflow: hidden;
     height: 100%;
     width: 100%;
+    margin: 0;
+    padding: 0;
   }
 }
 

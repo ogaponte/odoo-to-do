@@ -1,0 +1,492 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		35C8006B6B4EBCC675073D83 /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = 52A7D4741A298EB79E17A827 /* main.mm */; };
+		40D4351F33AC137B1597F522 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = D4FFA7F0D7025EFA369D6D7B /* LaunchScreen.storyboard */; };
+		57248462AC013BAE8501AA88 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5BEE1C1CC50084BC570D9660 /* Metal.framework */; };
+		62E2028E4FEF2B32E6A614BD /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D8E6E4C81E9A90E719A5A5B6 /* WebKit.framework */; };
+		7CD837217D053A1102841ED9 /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 7A38B396452C389FEF5B2B17 /* assets */; };
+		87EB3107E852ED27A9533FC7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A0D97BBAD4A6484F753454D /* Assets.xcassets */; };
+		96D467DC20561E75AD642C9E /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69A54EE52BED24E1BB680F92 /* UIKit.framework */; };
+		AD0F44D25F7973E9BB5842EF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B69D5EA38125DE27C91A153 /* Security.framework */; };
+		C6B14CF7FA7FFC552CC4D043 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9841BDD8B580F525A72609BD /* CoreGraphics.framework */; };
+		D77AA47E378CF973A75D8F9F /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 20989D0EBF3845322AB04E6B /* MetalKit.framework */; };
+		D9916850711079F302ECC5FF /* libapp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E5574106606E05EF3F560E9C /* libapp.a */; };
+		EC1DFFA4FCB393CB1342779B /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 989674E74DAC18D3F3C88FEE /* QuartzCore.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		01472E75D55885C2192C2D72 /* models.rs */ = {isa = PBXFileReference; path = models.rs; sourceTree = "<group>"; };
+		1A0D97BBAD4A6484F753454D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		20989D0EBF3845322AB04E6B /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		2B62562F41A77D5391B170A0 /* odoo-to-do_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "odoo-to-do_iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		470A063012B3C3A0749E2F60 /* main.rs */ = {isa = PBXFileReference; path = main.rs; sourceTree = "<group>"; };
+		4B69D5EA38125DE27C91A153 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		52A7D4741A298EB79E17A827 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		5BEE1C1CC50084BC570D9660 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		69A54EE52BED24E1BB680F92 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		7A38B396452C389FEF5B2B17 /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		8B4725114EF723586DFEBF18 /* sync.rs */ = {isa = PBXFileReference; path = sync.rs; sourceTree = "<group>"; };
+		9841BDD8B580F525A72609BD /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		989674E74DAC18D3F3C88FEE /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		98DA35D841B2C286862F032D /* commands.rs */ = {isa = PBXFileReference; path = commands.rs; sourceTree = "<group>"; };
+		9AD49CBE633A762D0BF7B983 /* db.rs */ = {isa = PBXFileReference; path = db.rs; sourceTree = "<group>"; };
+		9AD4A080DF46FF174482B012 /* odoo.rs */ = {isa = PBXFileReference; path = odoo.rs; sourceTree = "<group>"; };
+		C3AC7A787C1892E83D8188F1 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		CD8AC55FD3163FAE2C17A1CB /* lib.rs */ = {isa = PBXFileReference; path = lib.rs; sourceTree = "<group>"; };
+		D4FFA7F0D7025EFA369D6D7B /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		D8E6E4C81E9A90E719A5A5B6 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		E5574106606E05EF3F560E9C /* libapp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libapp.a; sourceTree = "<group>"; };
+		E8296A41ABAE1405228A9F33 /* odoo-to-do_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "odoo-to-do_iOS.entitlements"; sourceTree = "<group>"; };
+		F6E7903595781FC41E2EC35E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		4DD0D52D6548E3354EA3DCCD /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D9916850711079F302ECC5FF /* libapp.a in Frameworks */,
+				C6B14CF7FA7FFC552CC4D043 /* CoreGraphics.framework in Frameworks */,
+				57248462AC013BAE8501AA88 /* Metal.framework in Frameworks */,
+				D77AA47E378CF973A75D8F9F /* MetalKit.framework in Frameworks */,
+				EC1DFFA4FCB393CB1342779B /* QuartzCore.framework in Frameworks */,
+				AD0F44D25F7973E9BB5842EF /* Security.framework in Frameworks */,
+				96D467DC20561E75AD642C9E /* UIKit.framework in Frameworks */,
+				62E2028E4FEF2B32E6A614BD /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1304377B774899386CD8C0BD /* odoo-to-do */ = {
+			isa = PBXGroup;
+			children = (
+				52A7D4741A298EB79E17A827 /* main.mm */,
+				3F6434E1314CB7441342DBB7 /* bindings */,
+			);
+			path = "odoo-to-do";
+			sourceTree = "<group>";
+		};
+		2254CD7BC7ACAE4C6B98F0A7 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9841BDD8B580F525A72609BD /* CoreGraphics.framework */,
+				E5574106606E05EF3F560E9C /* libapp.a */,
+				5BEE1C1CC50084BC570D9660 /* Metal.framework */,
+				20989D0EBF3845322AB04E6B /* MetalKit.framework */,
+				989674E74DAC18D3F3C88FEE /* QuartzCore.framework */,
+				4B69D5EA38125DE27C91A153 /* Security.framework */,
+				69A54EE52BED24E1BB680F92 /* UIKit.framework */,
+				D8E6E4C81E9A90E719A5A5B6 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		2370FB50A4781AD00A7ADFEC /* odoo-to-do_iOS */ = {
+			isa = PBXGroup;
+			children = (
+				F6E7903595781FC41E2EC35E /* Info.plist */,
+				E8296A41ABAE1405228A9F33 /* odoo-to-do_iOS.entitlements */,
+			);
+			path = "odoo-to-do_iOS";
+			sourceTree = "<group>";
+		};
+		2AC1F39DDB3F070CEEBDA99C /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		2E41550F13767F9900DE9714 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				98DA35D841B2C286862F032D /* commands.rs */,
+				9AD49CBE633A762D0BF7B983 /* db.rs */,
+				CD8AC55FD3163FAE2C17A1CB /* lib.rs */,
+				470A063012B3C3A0749E2F60 /* main.rs */,
+				01472E75D55885C2192C2D72 /* models.rs */,
+				9AD4A080DF46FF174482B012 /* odoo.rs */,
+				8B4725114EF723586DFEBF18 /* sync.rs */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+		3F6434E1314CB7441342DBB7 /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				C3AC7A787C1892E83D8188F1 /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		51E07BC7B20F230B7EFD0590 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				1304377B774899386CD8C0BD /* odoo-to-do */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		C5FCBEFCF1745B5D5BD5E9EA /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2B62562F41A77D5391B170A0 /* odoo-to-do_iOS.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		DE8EC5E46FC3C57B118A51AA = {
+			isa = PBXGroup;
+			children = (
+				7A38B396452C389FEF5B2B17 /* assets */,
+				1A0D97BBAD4A6484F753454D /* Assets.xcassets */,
+				D4FFA7F0D7025EFA369D6D7B /* LaunchScreen.storyboard */,
+				2AC1F39DDB3F070CEEBDA99C /* Externals */,
+				2370FB50A4781AD00A7ADFEC /* odoo-to-do_iOS */,
+				51E07BC7B20F230B7EFD0590 /* Sources */,
+				2E41550F13767F9900DE9714 /* src */,
+				2254CD7BC7ACAE4C6B98F0A7 /* Frameworks */,
+				C5FCBEFCF1745B5D5BD5E9EA /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		"TEMP_D369EAA6-2D72-48FE-9E7A-F6F8D93DC09A" /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = arm64;
+			sourceTree = "<group>";
+		};
+		"TEMP_DDE4ADB1-30A1-49E9-BA06-32C2EA531845" /* x86_64 */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = x86_64;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		45FC0AD282324FC75B62F569 /* odoo-to-do_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 13F8F2729EF9A22B2FBDC9D1 /* Build configuration list for PBXNativeTarget "odoo-to-do_iOS" */;
+			buildPhases = (
+				FD03830CAFBCE7B700153F45 /* Build Rust Code */,
+				9FF4B5234770701851E145D7 /* Sources */,
+				C1104C3642B5729E485DC273 /* Resources */,
+				4DD0D52D6548E3354EA3DCCD /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "odoo-to-do_iOS";
+			packageProductDependencies = (
+			);
+			productName = "odoo-to-do_iOS";
+			productReference = 2B62562F41A77D5391B170A0 /* odoo-to-do_iOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		EA7918337FE261F920874234 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					45FC0AD282324FC75B62F569 = {
+						DevelopmentTeam = VCH4V3SQ97;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 53A1FC110831F0A2B7407C7B /* Build configuration list for PBXProject "odoo-to-do" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = DE8EC5E46FC3C57B118A51AA;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = C5FCBEFCF1745B5D5BD5E9EA /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				45FC0AD282324FC75B62F569 /* odoo-to-do_iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C1104C3642B5729E485DC273 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				87EB3107E852ED27A9533FC7 /* Assets.xcassets in Resources */,
+				40D4351F33AC137B1597F522 /* LaunchScreen.storyboard in Resources */,
+				7CD837217D053A1102841ED9 /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		FD03830CAFBCE7B700153F45 /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/Externals/x86_64/${CONFIGURATION}/libapp.a",
+				"$(SRCROOT)/Externals/arm64/${CONFIGURATION}/libapp.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -f \"$PROJECT_DIR/.tauri/cli-options-server.json\" ]; then\n  pnpm tauri ios xcode-script -v --platform \"${PLATFORM_DISPLAY_NAME:?}\" --sdk-root \"${SDKROOT:?}\" --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration \"${CONFIGURATION:?}\" ${FORCE_COLOR} ${ARCHS:?}\nelif [ ! -f \"$SRCROOT/Externals/arm64/${CONFIGURATION}/libapp.a\" ]; then\n  echo \"Building frontend and libapp.a...\"\n  cd \"$PROJECT_DIR/../..\" && pnpm build\n  cargo build --target aarch64-apple-ios --manifest-path \"$PROJECT_DIR/../../Cargo.toml\"\n  mkdir -p \"$SRCROOT/Externals/arm64/${CONFIGURATION}\"\n  cp \"$PROJECT_DIR/../../target/aarch64-apple-ios/debug/libodoo_to_do_lib.a\" \"$SRCROOT/Externals/arm64/${CONFIGURATION}/libapp.a\"\nelse\n  echo \"Using existing libapp.a\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9FF4B5234770701851E145D7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				35C8006B6B4EBCC675073D83 /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		113D4812A3C659A9AD063F47 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+		3D9953BF0D5236BF16EFE674 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "odoo-to-do_iOS/odoo-to-do_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = VCH4V3SQ97;
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "odoo-to-do_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.odootodo.desktop;
+				PRODUCT_NAME = "Odoo To Do";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = debug;
+		};
+		441465DAE78BEEEF352325D9 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "odoo-to-do_iOS/odoo-to-do_iOS.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = VCH4V3SQ97;
+				ENABLE_BITCODE = NO;
+				"EXCLUDED_ARCHS[sdk=iphoneos*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "odoo-to-do_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = "$(inherited) $(PROJECT_DIR)/Externals/arm64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = "$(inherited) $(PROJECT_DIR)/Externals/x86_64/$(CONFIGURATION) $(SDKROOT)/usr/lib/swift $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/$(PLATFORM_NAME) $(DEVELOPER_DIR)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift-5.0/$(PLATFORM_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = com.odootodo.desktop;
+				PRODUCT_NAME = "Odoo To Do";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = arm64;
+			};
+			name = release;
+		};
+		ED99ABDCBC1AD41427108E77 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		13F8F2729EF9A22B2FBDC9D1 /* Build configuration list for PBXNativeTarget "odoo-to-do_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3D9953BF0D5236BF16EFE674 /* debug */,
+				441465DAE78BEEEF352325D9 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		53A1FC110831F0A2B7407C7B /* Build configuration list for PBXProject "odoo-to-do" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				113D4812A3C659A9AD063F47 /* debug */,
+				ED99ABDCBC1AD41427108E77 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = EA7918337FE261F920874234 /* Project object */;
+}

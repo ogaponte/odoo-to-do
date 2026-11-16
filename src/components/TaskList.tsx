@@ -5,14 +5,18 @@ import {
   CloudCheck,
   CloudUpload,
   Folder,
+  Menu,
   Plus,
+  RefreshCw,
   Search,
   Star,
+  Trash2,
   X,
 } from 'lucide-react';
 import { OdooInstance, Project, Task } from '../types';
 import { handleWindowDrag } from '../utils/drag';
 import { ViewFilter } from './Sidebar';
+import { ConfirmModal } from './ConfirmModal';
 
 interface TaskListProps {
   tasks: Task[];
@@ -23,11 +27,16 @@ interface TaskListProps {
   onToggleComplete: (id: string, current: boolean) => void;
   onToggleStar: (id: string, current: string) => void;
   onCreateTask: (title: string) => Promise<void>;
+  onDeleteTask?: (id: string) => Promise<void>;
   currentView: ViewFilter;
   selectedInstance: OdooInstance | null;
   selectedProject: Project | null;
   searchQuery: string;
   onSearchChange: (query: string) => void;
+  isMobile?: boolean;
+  onOpenDrawer?: () => void;
+  onTriggerSync?: () => void;
+  isSyncing?: boolean;
 }
 
 export const TaskList: React.FC<TaskListProps> = ({
@@ -39,15 +48,21 @@ export const TaskList: React.FC<TaskListProps> = ({
   onToggleComplete,
   onToggleStar,
   onCreateTask,
+  onDeleteTask,
   currentView,
   selectedInstance,
   selectedProject,
   searchQuery,
   onSearchChange,
+  isMobile,
+  onOpenDrawer,
+  onTriggerSync,
+  isSyncing,
 }) => {
   const [quickTitle, setQuickTitle] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tabFilter, setTabFilter] = useState<'all' | 'pending' | 'completed'>('all');
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
   const handleQuickAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,42 +128,123 @@ export const TaskList: React.FC<TaskListProps> = ({
   };
 
   return (
-    <div className={`${selectedTaskId ? 'w-[340px] flex-none' : 'flex-1'} min-w-0 h-screen flex flex-col bg-white/10 dark:bg-black/15 backdrop-blur-lg border-r border-black/8 dark:border-white/10 select-none overflow-hidden`}>
+    <div
+      className={`${
+        isMobile
+          ? 'w-full flex-1'
+          : selectedTaskId
+          ? 'w-[340px] flex-none'
+          : 'flex-1'
+      } min-w-0 h-screen flex flex-col bg-white/10 dark:bg-black/15 backdrop-blur-lg border-r border-black/8 dark:border-white/10 select-none overflow-hidden`}
+    >
       {/* Action and Filter Header */}
       <div
-        data-tauri-drag-region="deep"
-        onMouseDown={handleWindowDrag}
-        className="px-6 pt-4 pb-3 border-b border-black/5 dark:border-white/5 cursor-grab active:cursor-grabbing"
+        data-tauri-drag-region={isMobile ? undefined : "deep"}
+        onMouseDown={isMobile ? undefined : handleWindowDrag}
+        style={
+          isMobile
+            ? { paddingTop: 'env(safe-area-inset-top, 0px)' }
+            : undefined
+        }
+        className={`${
+          isMobile ? 'px-4 pt-3 pb-3' : 'px-6 pt-4 pb-3'
+        } border-b border-black/5 dark:border-white/5`}
       >
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-3 pointer-events-none" data-tauri-drag-region="deep">
-          <div className="min-w-0 max-w-full" data-tauri-drag-region="deep">
-            <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight break-words">
-              {getHeaderTitle()}
-            </h1>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-              {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
-              {selectedInstance && (
-                <span className="inline-flex items-center gap-1.5 ml-2 font-medium">
-                  <span
-                    className="w-2 h-2 rounded-full inline-block shadow-xs"
-                    style={{ backgroundColor: selectedInstance.color }}
-                  />
-                  {selectedInstance.name}
-                </span>
-              )}
-            </p>
+        <div className="flex items-center justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {isMobile && onOpenDrawer && (
+              <button
+                type="button"
+                onClick={onOpenDrawer}
+                className="p-1.5 -ml-1 rounded-lg text-zinc-600 dark:text-zinc-300 hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer"
+                title="Menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            )}
+            <div className="min-w-0 max-w-full">
+              <h1 className="text-xl md:text-2xl font-bold text-zinc-900 dark:text-zinc-100 tracking-tight truncate">
+                {getHeaderTitle()}
+              </h1>
+              <p className="text-xs md:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+                {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                {selectedInstance && (
+                  <span className="inline-flex items-center gap-1.5 ml-2 font-medium">
+                    <span
+                      className="w-2 h-2 rounded-full inline-block shadow-xs"
+                      style={{ backgroundColor: selectedInstance.color }}
+                    />
+                    {selectedInstance.name}
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
 
-          {/* Tab Filter */}
-          <div
-            data-no-drag
-            className="flex items-center bg-black/6 dark:bg-white/10 p-0.5 rounded-lg text-sm backdrop-blur-md pointer-events-auto cursor-default"
-          >
+          <div className="flex items-center gap-2 shrink-0">
+            {isMobile && onTriggerSync && (
+              <button
+                type="button"
+                onClick={onTriggerSync}
+                disabled={isSyncing}
+                title="Sync now"
+                className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer"
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${isSyncing ? 'animate-spin text-blue-500' : ''}`}
+                />
+              </button>
+            )}
+
+            {/* Desktop Tab Filter */}
+            {!isMobile && (
+              <div
+                data-no-drag
+                className="flex items-center bg-black/6 dark:bg-white/10 p-0.5 rounded-lg text-sm backdrop-blur-md cursor-default"
+              >
+                <button
+                  onClick={() => setTabFilter('all')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    tabFilter === 'all'
+                      ? 'bg-white/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+                  }`}
+                >
+                  All
+                </button>
+                <button
+                  onClick={() => setTabFilter('pending')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    tabFilter === 'pending'
+                      ? 'bg-white/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+                  }`}
+                >
+                  Pending
+                </button>
+                <button
+                  onClick={() => setTabFilter('completed')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    tabFilter === 'completed'
+                      ? 'bg-white/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
+                  }`}
+                >
+                  Completed
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Mobile Tab Filter (clean segmented bar on its own row) */}
+        {isMobile && (
+          <div className="mb-2.5 flex items-center bg-black/6 dark:bg-white/8 p-0.5 rounded-lg text-xs backdrop-blur-md">
             <button
               onClick={() => setTabFilter('all')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`flex-1 py-1 rounded-md text-center font-medium transition cursor-pointer ${
                 tabFilter === 'all'
-                  ? 'bg-white/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold'
                   : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
             >
@@ -156,9 +252,9 @@ export const TaskList: React.FC<TaskListProps> = ({
             </button>
             <button
               onClick={() => setTabFilter('pending')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`flex-1 py-1 rounded-md text-center font-medium transition cursor-pointer ${
                 tabFilter === 'pending'
-                  ? 'bg-white/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold'
                   : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
             >
@@ -166,16 +262,16 @@ export const TaskList: React.FC<TaskListProps> = ({
             </button>
             <button
               onClick={() => setTabFilter('completed')}
-              className={`px-2.5 py-1 rounded-md transition ${
+              className={`flex-1 py-1 rounded-md text-center font-medium transition cursor-pointer ${
                 tabFilter === 'completed'
-                  ? 'bg-white/90 dark:bg-zinc-800/90 text-zinc-900 dark:text-zinc-100 font-semibold shadow-2xs'
+                  ? 'bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-2xs font-semibold'
                   : 'text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100'
               }`}
             >
               Completed
             </button>
           </div>
-        </div>
+        )}
 
         {/* Search Input */}
         <div data-no-drag className="relative mb-2.5 pointer-events-auto cursor-default">
@@ -223,7 +319,14 @@ export const TaskList: React.FC<TaskListProps> = ({
       </div>
 
       {/* Tasks Scrollable List */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5">
+      <div
+        style={
+          isMobile
+            ? { paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 2rem)' }
+            : undefined
+        }
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-1.5"
+      >
         {filteredTasks.length === 0 ? (
           <div className="h-64 flex flex-col items-center justify-center text-center p-6">
             <div className="w-12 h-12 rounded-full bg-black/5 dark:bg-white/5 flex items-center justify-center text-zinc-400 mb-3">
@@ -283,23 +386,39 @@ export const TaskList: React.FC<TaskListProps> = ({
                       {task.title}
                     </span>
 
-                    {/* Star Priority Button */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleStar(task.id, task.priority);
-                      }}
-                      className={`shrink-0 p-0.5 transition cursor-pointer ${
-                        isStarred
-                          ? 'text-amber-500'
-                          : 'text-zinc-300 dark:text-zinc-600 hover:text-amber-400'
-                      }`}
-                    >
-                      <Star
-                        className={`w-4 h-4 ${isStarred ? 'fill-amber-500' : ''}`}
-                      />
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {onDeleteTask && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTaskToDelete(task);
+                          }}
+                          title="Delete task"
+                          className="opacity-0 group-hover:opacity-100 p-0.5 text-zinc-400 hover:text-rose-500 transition cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+
+                      {/* Star Priority Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleStar(task.id, task.priority);
+                        }}
+                        className={`p-0.5 transition cursor-pointer ${
+                          isStarred
+                            ? 'text-amber-500'
+                            : 'text-zinc-300 dark:text-zinc-600 hover:text-amber-400'
+                        }`}
+                      >
+                        <Star
+                          className={`w-4 h-4 ${isStarred ? 'fill-amber-500' : ''}`}
+                        />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Metadata tags */}
@@ -357,6 +476,22 @@ export const TaskList: React.FC<TaskListProps> = ({
           })
         )}
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(taskToDelete)}
+        title="¿Eliminar tarea?"
+        message={`¿Estás seguro de que deseas eliminar la tarea "${taskToDelete?.title}"?`}
+        confirmLabel="Eliminar"
+        cancelLabel="Cancelar"
+        onConfirm={async () => {
+          if (taskToDelete && onDeleteTask) {
+            const id = taskToDelete.id;
+            setTaskToDelete(null);
+            await onDeleteTask(id);
+          }
+        }}
+        onCancel={() => setTaskToDelete(null)}
+      />
     </div>
   );
 };

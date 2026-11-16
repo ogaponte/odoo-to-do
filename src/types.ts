@@ -44,6 +44,12 @@ export interface Project {
   odoo_write_date: string | null;
 }
 
+export interface CreateProjectInput {
+  instance_id: string;
+  name: string;
+  color?: string;
+}
+
 export interface Stage {
   id: string;
   instance_id: string;
